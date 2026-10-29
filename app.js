@@ -2088,6 +2088,40 @@ function saveNazraLearned(arr){
   try{ localStorage.setItem(NAZRA_LEARNED_KEY, JSON.stringify(arr)); }catch(e){}
 }
 
+function showToast(msg){
+  let el = document.getElementById('appToast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'appToast';
+    el.className = 'toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=> el.classList.remove('show'), 4500);
+}
+
+/* Plays a Nazra letter. Uses the sounds embedded in nazra-audio.js; if that file is
+   missing it falls back to audio/nazra/<file>.mp3; if both fail, a clear message is shown. */
+function playNazraAudio(letter, btn){
+  const embedded = (typeof NAZRA_AUDIO_DATA !== 'undefined') ? NAZRA_AUDIO_DATA[letter.audio] : null;
+  const src = embedded || (NAZRA_AUDIO_BASE + letter.audio);
+  if(window.nazraAudio){ try{ window.nazraAudio.pause(); }catch(e){} }
+  const audioEl = new Audio(src);
+  window.nazraAudio = audioEl;
+  let reported = false;
+  const fail = (detail)=>{
+    if(reported) return;
+    reported = true;
+    if(btn){ btn.textContent = '⚠️'; setTimeout(()=>{ btn.textContent = '🔊'; }, 2000); }
+    showToast(T({ur:'آواز نہیں چل سکی۔', en:'The sound could not be played.', roman:'Awaz nahi chal saki.'}) + (detail ? ' (' + detail + ')' : ''));
+  };
+  audioEl.addEventListener('error', ()=> fail(embedded ? 'decode error' : 'file not found: ' + NAZRA_AUDIO_BASE + letter.audio));
+  const p = audioEl.play();
+  if(p && p.catch) p.catch(err => fail(err && err.name ? err.name : ''));
+}
+
 function renderNazraGrid(){
   const learned = getNazraLearned();
   const grid = document.getElementById('nazraGrid');
@@ -2106,12 +2140,7 @@ function renderNazraGrid(){
       if(e.target.closest('.nz-play')){
         const letter = NAZRA_LETTERS[idx];
         if(NAZRA_AUDIO_AVAILABLE.has(letter.audio)){
-          const playBtn = e.target.closest('.nz-play');
-          new Audio(NAZRA_AUDIO_BASE + letter.audio).play().catch((err)=>{
-            playBtn.textContent = '⚠️';
-            playBtn.title = 'Audio could not be loaded: ' + err.message;
-            setTimeout(()=>{ playBtn.textContent = '🔊'; }, 2000);
-          });
+          playNazraAudio(letter, e.target.closest('.nz-play'));
         }
         return;
       }
