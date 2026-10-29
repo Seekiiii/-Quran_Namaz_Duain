@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'deen-aasan-shell-v36';
-const DATA_CACHE = 'deen-aasan-data-v36';
+const SHELL_CACHE = 'deen-aasan-shell-v37';
+const DATA_CACHE = 'deen-aasan-data-v37';
 
 const SHELL_ASSETS = [
   './',
@@ -7,6 +7,7 @@ const SHELL_ASSETS = [
   './style.css',
   './app.js',
   './i18n-data.js',
+  './nazra-audio.js',
   './firebase-config.js',
   './manifest.json',
   './icon-192.png',
@@ -17,7 +18,7 @@ const SHELL_ASSETS = [
 // Install: pre-cache the app shell so the app opens instantly, even offline
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL_ASSETS))
+    caches.open(SHELL_CACHE).then((cache) => Promise.all(SHELL_ASSETS.map((asset) => cache.add(asset).catch(() => null))))
   );
   self.skipWaiting();
 });
